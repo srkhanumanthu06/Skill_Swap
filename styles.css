@@ -485,7 +485,7 @@ input, textarea, select {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -2144,15 +2144,24 @@ input, textarea, select {
 
 @media (max-width: 768px) {
   .nav-logo {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
   
   .nav-actions {
-    gap: 0.75rem !important;
+    gap: 0.5rem !important;
   }
   
   .hero-title {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
+  }
+
+  .steps-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+
+  .steps-grid::before {
+    display: none;
   }
 }
 
