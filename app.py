@@ -17,7 +17,7 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-PORT = 5000
+PORT = int(os.getenv('PORT', 5000))
 JWT_SECRET = 'super-secure-secret-skillswap-ai-2026'
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database.sqlite')
 
