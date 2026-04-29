@@ -3,3 +3,4 @@ Flask-Cors
 PyJWT
 bcrypt
 Flask-SocketIO
+python-dotenv
