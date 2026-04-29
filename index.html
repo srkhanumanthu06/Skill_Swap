@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Skill Swap AI — Exchange skills, grow together. A peer-to-peer learning platform connecting learners and teachers for free skill exchange.">
+  <title>Skill Swap AI — Learn. Teach. Grow.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="assets/logo.png">
+</head>
+<body>
+
+  <!-- Animated Background Blobs -->
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  
+  <div class="grid-bg"></div>
+
+  <!-- SVG Defs for progress rings -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#8b5cf6"/>
+        <stop offset="100%" stop-color="#ec4899"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- ======== NAVIGATION ======== -->
+  <nav class="navbar" id="navbar">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <a class="nav-logo new-logo" href="#" onclick="navigateTo('landing')">
+        <img src="assets/logo.png" alt="Logo" class="logo-img">
+        <span>skillswap</span>
+      </a>
+
+      <!-- Original nav-links replaced by Menu button on desktop to match image -->
+
+        <div class="nav-actions" style="display: flex; align-items: center; gap: 1rem; position: relative;">
+          <button class="btn btn-secondary btn-sm nav-signin" onclick="openAuthModal()" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.1);">Sign in</button>
+          <button class="btn btn-primary btn-sm" id="authBtn" onclick="openAuthModal()" style="background: linear-gradient(135deg, #a855f7, #ec4899); border: none;">Get Started</button>
+          
+          <button class="btn btn-secondary btn-sm" onclick="navigateTo('notifications')" style="background: transparent; border: none; padding: 5px; position: relative; color: var(--text-light); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="bell"></i>
+            <span style="position:absolute; top:2px; right:4px; width:8px; height:8px; background:var(--pink); border-radius:50%; box-shadow:0 0 5px var(--pink)"></span>
+          </button>
+          
+          <button class="btn btn-secondary btn-sm" onclick="toggleChat()" style="background: transparent; border: none; padding: 5px; color: var(--text-light); display: flex; align-items: center; justify-content: center;" title="Messages">
+            <i data-lucide="send"></i>
+          </button>
+
+          <div class="menu-dropdown-wrapper">
+            <button class="btn btn-secondary btn-sm nav-menu-btn" onclick="toggleUserMenu()" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 1.2rem; line-height: 1;">≡</span> Menu
+            </button>
+            <div class="user-menu-dropdown glass-card" id="userMenuDropdown">
+              <div class="menu-item" onclick="navigateTo('profile')"><i data-lucide="user"></i> Profile</div>
+              <div class="menu-item" onclick="navigateTo('profile'); setTimeout(() => document.getElementById('profileCalendar').scrollIntoView(), 100)"><i data-lucide="calendar"></i> Availability Calendar</div>
+              <div class="menu-item" onclick="navigateTo('search')"><i data-lucide="search"></i> Search Skill</div>
+              <div class="menu-item" onclick="navigateTo('network')"><i data-lucide="link"></i> My Network</div>
+              <div class="menu-item" onclick="navigateTo('groups')"><i data-lucide="users"></i> Study Groups</div>
+              <div class="menu-item" onclick="navigateTo('progress')"><i data-lucide="history"></i> Past Swaps</div>
+              <div class="menu-item" onclick="navigateTo('progress')"><i data-lucide="trending-up"></i> Progress</div>
+              <div class="menu-divider"></div>
+              <div class="menu-item logout" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-links" id="navLinks" style="display: none;">
+        <span class="nav-link active" data-page="landing" onclick="navigateTo('landing')">Home</span>
+        <span class="nav-link" data-page="explore" onclick="navigateTo('explore')">Explore Skills</span>
+        <span class="nav-link" data-page="search" onclick="navigateTo('search')">Search Skill</span>
+        <span class="nav-link" data-page="dashboard" onclick="navigateTo('dashboard')">Dashboard</span>
+        <span class="nav-link" data-page="leaderboard" onclick="navigateTo('leaderboard')">Leaderboard</span>
+        <span class="nav-link" data-page="groups" onclick="navigateTo('groups')">Groups</span>
+        <span class="nav-link" data-page="network" onclick="navigateTo('network')">My Network</span>
+        <span class="nav-link" data-page="profile" onclick="navigateTo('profile')">Profile</span>
+        <span class="nav-link" data-page="progress" onclick="navigateTo('progress')">Progress</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ======== PUBLIC PROFILE MODAL ======== -->
+  <div class="modal-overlay" id="publicProfileModal">
+    <div class="modal" style="max-width:600px; padding:0; overflow:hidden">
+      <div style="background:linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2)); padding:var(--space-2xl) var(--space-xl); text-align:center; position:relative">
+        <button class="modal-close" onclick="closePublicProfile()" style="position:absolute; top:15px; right:15px">&times;</button>
+        <div class="avatar" id="pubAvatar" style="width:80px; height:80px; font-size:2rem; margin:0 auto var(--space-md); border:3px solid var(--pink)">JD</div>
+        <h2 id="pubName" style="font-size:1.8rem; margin-bottom:5px">John Doe</h2>
+        <p id="pubRating" style="color:var(--text-muted)">📍 New York · ⭐⭐⭐⭐⭐ (0)</p>
+        <div style="display:flex; justify-content:center; gap:10px; margin-top:var(--space-md)">
+          <button class="btn btn-primary" id="pubConnectBtn" onclick="sendConnectionRequest()">Connect</button>
+          <button class="btn btn-secondary" id="pubMessageBtn" onclick="messagePublicUser()">Message</button>
+        </div>
+      </div>
+      <div style="padding:var(--space-xl)">
+        <h4 style="margin-bottom:var(--space-sm); color:var(--text-muted)">About</h4>
+        <p id="pubBio" style="margin-bottom:var(--space-lg)">User bio goes here.</p>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md)">
+          <div>
+            <h4 style="margin-bottom:var(--space-sm); color:var(--text-muted)">Teaches</h4>
+            <div id="pubTeaches" class="recommend-skills"></div>
+          </div>
+          <div>
+            <h4 style="margin-bottom:var(--space-sm); color:var(--text-muted)">Wants to Learn</h4>
+            <div id="pubWants" class="recommend-skills"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== LANDING PAGE ======== -->
+  <div id="landing" class="page-section active">
+
+    <!-- Hero -->
+    <section class="hero section new-hero">
+      <div class="container" style="display:flex; justify-content:center; align-items:center; text-align:center;">
+        <div class="hero-content new-hero-content" style="max-width: 900px; display: flex; flex-direction: column; align-items: center; margin: 0 auto; width: 100%;">
+
+
+
+          <h1 class="hero-title new-hero-title">
+            <div class="title-line title-white">Exchange</div>
+            <div class="title-line title-white">Skills.</div>
+            <div class="title-line gradient-text">Unlock</div>
+            <div class="title-line gradient-text">Potential.</div>
+          </h1>
+
+          <p class="hero-description new-hero-desc">
+            A smart web platform connecting people who want to teach with those who want to learn — built on trust, availability, and real progress.
+          </p>
+
+          <div class="hero-buttons new-hero-buttons">
+            <button class="btn btn-primary btn-lg start-swapping-btn" onclick="openAuthModal()">Skill Up Together →</button>
+            <button class="btn btn-secondary btn-lg how-it-works-btn" onclick="document.querySelector('.how-it-works').scrollIntoView({behavior:'smooth'})">See How It Works</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="section how-it-works">
+      <div class="container">
+        <div style="text-align:center">
+          <h2 class="section-title fade-in">How <span class="gradient-text">SkillSwap</span> Works</h2>
+          <p class="section-subtitle fade-in" style="margin-left:auto;margin-right:auto">
+            Three simple steps to start exchanging skills with like-minded people.
+          </p>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card glass-card fade-in">
+            <div class="step-number">1</div>
+            <div class="step-icon"><i data-lucide="edit-3"></i></div>
+            <h3 class="step-title">List Your Skills</h3>
+            <p class="step-desc">Share what you can teach and what you want to learn. Our AI categorizes and tags them automatically.</p>
+          </div>
+          <div class="step-card glass-card fade-in">
+            <div class="step-number">2</div>
+            <div class="step-icon"><i data-lucide="cpu"></i></div>
+            <h3 class="step-title">Get Smart Matches</h3>
+            <p class="step-desc">Our recommendation engine finds the perfect skill partners based on your goals, schedule, and location.</p>
+          </div>
+          <div class="step-card glass-card fade-in">
+            <div class="step-number">3</div>
+            <div class="step-icon"><i data-lucide="rocket"></i></div>
+            <h3 class="step-title">Swap & Grow</h3>
+            <p class="step-desc">Schedule sessions, exchange knowledge, track your progress, and build your reputation in the community.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Categories Preview -->
+    <section class="section" id="featuredCategories">
+      <div class="container">
+        <div class="categories-header">
+          <div>
+            <h2 class="section-title fade-in">Popular <span class="gradient-text">Skill Categories</span></h2>
+            <p class="section-subtitle fade-in">Discover what thousands of learners are teaching and learning right now.</p>
+          </div>
+          <button class="btn btn-secondary fade-in" onclick="navigateTo('explore')">View All →</button>
+        </div>
+
+        <div class="categories-grid" id="featuredCategoriesGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="section" style="background:var(--bg-secondary)">
+      <div class="container">
+        <div style="text-align:center">
+          <h2 class="section-title fade-in">Loved by <span class="gradient-text">Learners</span></h2>
+          <p class="section-subtitle fade-in" style="margin-left:auto;margin-right:auto">
+            See what our community members have to say about their experience.
+          </p>
+        </div>
+
+        <div class="recommendations-grid" id="testimonialsGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ======== LEADERBOARD PAGE ======== -->
+  <div id="leaderboard" class="page-section">
+    <section class="section" style="padding-top:120px">
+      <div class="container">
+        <div style="text-align:center;margin-bottom:var(--space-2xl)">
+          <h2 class="section-title">Top Ranked <span class="gradient-text">Learners</span></h2>
+          <p class="section-subtitle" style="margin-left:auto;margin-right:auto">Discover the most helpful and highly-rated members of our community.</p>
+        </div>
+        <div class="recommendations-grid" id="leaderboardGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== SEARCH SKILL PAGE ======== -->
+  <div id="search" class="page-section">
+    <section class="section" style="padding-top:120px; min-height: 70vh; display: flex; align-items: center;">
+      <div class="container" style="text-align:center; max-width:600px; margin:0 auto;">
+        <h2 class="section-title fade-in">Find Your <span class="gradient-text">Tutor</span></h2>
+        <p class="section-subtitle fade-in" style="margin-left:auto; margin-right:auto;">Search for absolutely any skill in the world. If we don't have a human tutor, our AI will guide you.</p>
+        
+        <div class="input-group fade-in" style="margin-top:var(--space-2xl); display:flex; gap:10px;">
+          <input class="input-field" type="text" id="globalSkillSearchInput" placeholder="e.g. 'Rust', 'Quantum Computing', 'Figma'" onkeydown="if(event.key === 'Enter') executeGlobalSearch()" style="flex-grow:1; font-size:1.1rem; padding:15px 20px;">
+          <button class="btn btn-primary" onclick="executeGlobalSearch()" style="font-size:1.1rem; padding:0 30px;">Search</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== NOTIFICATIONS PAGE ======== -->
+  <div id="notifications" class="page-section">
+    <section class="section" style="padding-top:120px; min-height: 70vh;">
+      <div class="container" style="max-width:800px; margin:0 auto;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:var(--space-2xl);">
+          <div>
+            <h2 class="section-title fade-in" style="margin-bottom:0">Your <span class="gradient-text">Notifications</span></h2>
+            <p class="section-subtitle fade-in" style="margin-top:var(--space-sm); margin-bottom:0">Smart recommendations and updates based on your profile.</p>
+          </div>
+          <button class="btn btn-secondary fade-in" onclick="clearNotifications()">Clear All</button>
+        </div>
+        
+        <div id="notificationsList" style="display:flex; flex-direction:column; gap:var(--space-md);">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== MY NETWORK PAGE ======== -->
+  <div id="network" class="page-section">
+    <section class="section" style="padding-top:120px; min-height: 70vh;">
+      <div class="container" style="max-width:900px; margin:0 auto;">
+        <h2 class="section-title fade-in">My <span class="gradient-text">Network</span></h2>
+        <p class="section-subtitle fade-in">Manage your connections and incoming requests.</p>
+        
+        <div style="margin-top:var(--space-2xl);">
+          <h3 style="margin-bottom:var(--space-md); font-size:1.5rem">Pending Requests</h3>
+          <div id="pendingConnectionsList" style="display:flex; flex-direction:column; gap:var(--space-md); margin-bottom:var(--space-2xl)">
+            <!-- Populated by JS -->
+          </div>
+
+          <h3 style="margin-bottom:var(--space-md); font-size:1.5rem">My Connections</h3>
+          <div id="activeConnectionsGrid" class="recommendations-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== EXPLORE SKILLS PAGE ======== -->
+  <div id="explore" class="page-section">
+    <section class="section" style="padding-top:120px">
+      <div class="container">
+        <h2 class="section-title">Explore <span class="gradient-text">Skills</span></h2>
+        <p class="section-subtitle">Browse all categories or search for a specific skill you want to learn or teach.</p>
+
+        <!-- Real-time Trends -->
+        <div class="glass-card fade-in" style="margin-bottom:var(--space-2xl); padding:var(--space-xl)">
+          <h3 style="margin-bottom:var(--space-sm); font-size:1.2rem; display:flex; align-items:center; gap:8px">
+            <i data-lucide="trending-up" style="color:var(--pink)"></i> Market Trends This Week
+          </h3>
+          <p class="text-muted" style="margin-bottom:var(--space-lg); font-size:0.9rem">Top skills currently in high demand across the platform.</p>
+          <div id="trendsContainer" style="display:flex; flex-direction:column; gap:var(--space-md)">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div style="display:flex;gap:var(--space-lg);margin-bottom:var(--space-2xl);flex-wrap:wrap;align-items:center">
+          <div class="input-group" style="max-width:400px">
+            <span class="input-icon">🔍</span>
+            <input class="input-field" type="text" id="skillSearch" placeholder="Search skills..." oninput="filterSkills()">
+          </div>
+          <div class="categories-filters" id="categoryFilters">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="categories-grid" id="allCategoriesGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Recommended Users for this skill -->
+        <div style="margin-top:var(--space-4xl)">
+          <h3 class="section-title" style="font-size:1.5rem">Recommended <span class="gradient-text">Skill Partners</span></h3>
+          <p class="section-subtitle">People who match your interests and are available to swap.</p>
+          <div class="recommendations-grid" id="recommendationsGrid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== CATEGORY SKILLS PAGE ======== -->
+  <div id="categorySkillsPage" class="page-section">
+    <section class="section" style="padding-top:120px">
+      <div class="container">
+        <button class="btn btn-secondary btn-sm" onclick="navigateTo('explore')" style="margin-bottom:var(--space-xl)">← Back to Categories</button>
+        <h2 class="section-title" id="categorySkillsTitle">Skills in <span class="gradient-text">Category</span></h2>
+        <p class="section-subtitle">Select a specific skill to find tutors.</p>
+        <div class="categories-grid" id="categorySkillsGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== SKILL TUTORS PAGE ======== -->
+  <div id="skillTutorsPage" class="page-section">
+    <section class="section" style="padding-top:120px">
+      <div class="container">
+        <!-- Back button will use JS history or a fixed back function -->
+        <button class="btn btn-secondary btn-sm" onclick="navigateTo('explore')" style="margin-bottom:var(--space-xl)">← Back</button>
+        <h2 class="section-title">Tutors for <span class="gradient-text" id="skillTutorsTitle">Skill</span></h2>
+        
+        <!-- Filters Bar -->
+        <div style="display:flex; gap:var(--space-md); margin-bottom:var(--space-xl); align-items:center; flex-wrap:wrap">
+          <div class="input-group" style="margin-bottom:0">
+            <select id="tutorGenderFilter" class="input-field" onchange="filterTutors()">
+              <option value="all">All Genders</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="input-group" style="margin-bottom:0">
+            <select id="tutorRatingFilter" class="input-field" onchange="filterTutors()">
+              <option value="0">Any Rating</option>
+              <option value="4.0">4.0+ Stars</option>
+              <option value="4.5">4.5+ Stars</option>
+              <option value="4.8">4.8+ Stars</option>
+            </select>
+          </div>
+          <div class="input-group" style="margin-bottom:0">
+            <select id="tutorSortOption" class="input-field" onchange="filterTutors()">
+              <option value="rating">Sort by Rating</option>
+              <option value="name">Sort by Name</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="recommendations-grid" id="skillTutorsGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="noTutorsEmptyState" class="glass-card fade-in" style="display:none; text-align:center; padding:var(--space-3xl) var(--space-xl); margin-top:var(--space-xl);">
+          <div style="font-size:3rem; margin-bottom:var(--space-md);">🏜️</div>
+          <h3 style="font-size:1.5rem; margin-bottom:var(--space-sm);">No human tutors found</h3>
+          <p style="color:var(--text-muted); max-width:500px; margin:0 auto var(--space-xl);">
+            It looks like we don't have any experts teaching this specific skill right now. But don't let that stop you from learning!
+          </p>
+          <div style="display:flex; gap:var(--space-md); justify-content:center; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="generateAIStudyGuide()">🤖 Generate AI Study Guide</button>
+            <button class="btn btn-secondary" onclick="createPeerGroup()">👥 Create Peer Study Group</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== DASHBOARD ======== -->
+  <div id="dashboard" class="page-section">
+    <section class="section" style="padding-top:120px">
+      <div class="container">
+
+        <div class="dashboard-header">
+          <div class="dashboard-welcome">
+            <h2>Welcome back, <span class="gradient-text" id="dashboardName">Alex</span> 👋</h2>
+            <p>Here's what's happening with your skill exchanges.</p>
+          </div>
+          <div style="display:flex;gap:var(--space-sm)">
+            <button class="btn btn-secondary btn-sm" onclick="openPersonalizeModal()">Personalize Profile</button>
+            <button class="btn btn-primary btn-sm" onclick="openScheduleModal()">+ New Session</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card glass-card fade-in">
+            <div class="stat-card-header">
+              <div class="stat-card-icon">📚</div>
+              <span class="stat-card-change up" id="dashSessionsChange">+12%</span>
+            </div>
+            <div class="stat-card-value" id="dashSessionsCount">24</div>
+            <div class="stat-card-label">Sessions Completed</div>
+          </div>
+          <div class="stat-card glass-card fade-in">
+            <div class="stat-card-header">
+              <div class="stat-card-icon">⭐</div>
+              <span class="stat-card-change up" id="dashRatingChange">+0.2</span>
+            </div>
+            <div class="stat-card-value" id="dashRatingValue">4.9</div>
+            <div class="stat-card-label">Average Rating</div>
+          </div>
+          <div class="stat-card glass-card fade-in">
+            <div class="stat-card-header">
+              <div class="stat-card-icon">🔥</div>
+              <span class="stat-card-change up" id="dashStreakChange">+3</span>
+            </div>
+            <div class="stat-card-value" id="dashStreakValue">7</div>
+            <div class="stat-card-label">Day Streak</div>
+          </div>
+          <div class="stat-card glass-card fade-in">
+            <div class="stat-card-header">
+              <div class="stat-card-icon">🤝</div>
+              <span class="stat-card-change up" id="dashConnectionsChange">+5</span>
+            </div>
+            <div class="stat-card-value" id="dashConnectionsCount">18</div>
+            <div class="stat-card-label">Connections</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+          <div class="dashboard-main">
+            <!-- Upcoming Sessions -->
+            <div class="dash-card glass-card fade-in">
+              <div class="dash-card-title">
+                <span>📅 Upcoming Sessions</span>
+                <button class="btn btn-secondary btn-sm" onclick="openScheduleModal()">Schedule</button>
+              </div>
+              <div id="upcomingSessions">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <!-- Skill Matches -->
+            <div class="dash-card glass-card fade-in">
+              <div class="dash-card-title">
+                <span>🤖 AI Skill Matches</span>
+                <span class="badge badge-green">Smart Match</span>
+              </div>
+              <div id="skillMatches">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-sidebar">
+            <!-- Calendar Widget -->
+            <div class="dash-card glass-card fade-in calendar-wrapper" id="miniCalendar">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Recent Reviews -->
+            <div class="dash-card glass-card fade-in">
+              <div class="dash-card-title">⭐ Recent Reviews</div>
+              <div id="recentReviews">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== PROFILE PAGE ======== -->
+  <div id="profile" class="page-section">
+    <section class="section" style="padding-top:120px">
+      <div class="container">
+        <div class="profile-header-card glass-card fade-in">
+          <div class="avatar avatar-xl" id="profileAvatar">AK</div>
+          <div class="profile-info">
+            <h2 class="profile-name">
+              <span id="profileName">Alex Kumar</span>
+              <span class="verified-badge" title="Verified">✓</span>
+            </h2>
+            <p class="profile-bio" id="profileEmail">
+              alex@example.com
+            </p>
+            <div class="profile-meta">
+              <span class="profile-meta-item">📍 Remote</span>
+              <span class="profile-meta-item" id="profileJoined">📅 Joined recently</span>
+              <span class="profile-meta-item">⭐ 5.0 (New)</span>
+              <span class="profile-meta-item">🔥 Level 1</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:var(--space-sm);flex-wrap:inherit" id="profileActionsContainer">
+            <button class="btn btn-primary btn-sm" id="btnEditProfile" onclick="openPersonalizeModal()">Edit Profile</button>
+            <button class="btn btn-secondary btn-sm" id="btnLogout" onclick="handleLogout()" style="border-color:var(--red);color:var(--red)">Logout</button>
+          </div>
+        </div>
+
+        <div class="profile-grid">
+          <!-- Skills I Teach -->
+          <div class="glass-card fade-in">
+            <div class="dash-card-title">🎓 Skills I Teach</div>
+            <div class="skill-list" id="teachSkills">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Skills I Want to Learn -->
+          <div class="glass-card fade-in">
+            <div class="dash-card-title">📖 Skills I Want to Learn</div>
+            <div class="skill-list" id="learnSkills">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Availability -->
+          <div class="glass-card fade-in calendar-wrapper" id="profileCalendar">
+            <div class="dash-card-title">📅 My Availability</div>
+            <!-- Calendar populated by JS -->
+          </div>
+
+          <!-- My Study Groups -->
+          <div class="glass-card fade-in">
+            <div class="dash-card-title">👥 My Study Groups</div>
+            <div id="profileStudyGroups" style="margin-top:10px">
+              <p class="text-muted">You haven't joined any groups yet.</p>
+            </div>
+          </div>
+
+          <!-- Reviews -->
+          <div class="glass-card fade-in">
+            <div class="dash-card-title">⭐ Reviews (42)</div>
+            <div id="profileReviews">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== PROGRESS PAGE ======== -->
+  <div id="progress" class="page-section">
+    <section class="section" style="padding-top:120px">
+      <div class="container">
+        <h2 class="section-title">Your <span class="gradient-text">Progress</span></h2>
+        <p class="section-subtitle">Track your learning journey and see how far you've come.</p>
+
+        <!-- Empty State for New Users -->
+        <div id="progressEmptyState" class="glass-card fade-in" style="display:none; text-align:center; padding:var(--space-4xl) var(--space-xl)">
+          <h3 style="font-size:1.5rem; margin-bottom:var(--space-md)">Welcome to Your Learning Journey!</h3>
+          <p style="color:var(--text-muted); margin-bottom:var(--space-xl)">You haven't started any learning sessions yet. Explore skills and connect with tutors to begin tracking your progress.</p>
+          <button class="btn btn-primary" onclick="navigateTo('explore')">Start Learning</button>
+        </div>
+
+        <div id="progressDataContainer">
+          <!-- XP Overall -->
+          <div class="glass-card fade-in" style="margin-bottom:var(--space-2xl);padding:var(--space-2xl)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+            <div>
+              <div style="font-size:0.85rem;color:var(--text-muted)">Total Experience</div>
+              <div style="font-size:2rem;font-weight:800"><span class="gradient-text">Level 4</span> — 1,250 XP</div>
+            </div>
+            <div class="badge badge-pink">🔥 2-day streak</div>
+          </div>
+          <div class="progress-xp-bar">
+            <div class="progress-xp-fill" style="width:62%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:var(--space-xs);font-size:0.8rem;color:var(--text-muted)">
+            <span>1,250 XP</span>
+            <span>2,000 XP to Level 5</span>
+          </div>
+        </div>
+
+        <!-- Progress Rings Grid -->
+        <div class="progress-grid" id="progressGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Learning History -->
+        <div class="glass-card fade-in" style="margin-top:var(--space-2xl)">
+          <div class="dash-card-title">📈 Learning History</div>
+          <div id="learningHistory">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== GROUPS PAGE ======== -->
+  <div id="groups" class="page-section">
+    <section class="section" style="padding-top:120px">
+      <div class="container">
+        <div class="dashboard-header">
+          <div class="dashboard-welcome">
+            <h2 class="section-title fade-in">Study <span class="gradient-text">Groups</span></h2>
+            <p>Join communities, form teams, and study together.</p>
+          </div>
+        </div>
+
+        <div style="margin-top:var(--space-2xl)">
+          <div class="categories-header">
+            <div>
+              <h3 style="font-size:1.5rem; margin-bottom:var(--space-xs)">🎯 Skill-Based Study Groups</h3>
+              <p style="color:var(--text-muted); font-size:0.9rem">Groups curated based on what you want to learn.</p>
+            </div>
+          </div>
+          <div class="recommendations-grid" id="skillGroupsGrid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div style="margin-top:var(--space-3xl)">
+          <div class="categories-header">
+            <div>
+              <h3 style="font-size:1.5rem; margin-bottom:var(--space-xs)">🚀 Hackathon Teams</h3>
+              <p style="color:var(--text-muted); font-size:0.9rem">Find teammates for upcoming global hackathons.</p>
+            </div>
+          </div>
+          <div class="recommendations-grid" id="hackathonGroupsGrid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div style="margin-top:var(--space-3xl)">
+          <div class="categories-header">
+            <div>
+              <h3 style="font-size:1.5rem; margin-bottom:var(--space-xs)">📚 Competitive Exams</h3>
+              <p style="color:var(--text-muted); font-size:0.9rem">Study squads for GRE, GMAT, AWS, and more.</p>
+            </div>
+          </div>
+          <div class="recommendations-grid" id="examGroupsGrid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== CHAT PANEL ======== -->
+  <div class="chat-overlay" id="chatOverlay" onclick="toggleChat()"></div>
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <div class="avatar avatar-sm" id="chatAvatar">SJ</div>
+        <div>
+          <div class="chat-header-name" id="chatPartnerName">Sarah Johnson</div>
+          <div class="chat-header-status">● Online</div>
+        </div>
+      </div>
+      <button class="btn-icon" onclick="toggleChat()">✕</button>
+    </div>
+
+
+    <!-- Chat Messages -->
+    <div class="chat-messages" id="chatMessages">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="chat-input-area">
+      <input class="chat-input" id="chatInput" type="text" placeholder="Type a message..." onkeypress="handleChatKeypress(event)">
+      <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+  <!-- ======== AUTH MODAL ======== -->
+  <div class="modal-overlay auth-modal" id="authModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title gradient-text">Welcome to SkillSwap</h3>
+        <button class="modal-close" onclick="closeAuthModal()">✕</button>
+      </div>
+
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="switchAuthTab('login')">Sign In</div>
+        <div class="auth-tab" onclick="switchAuthTab('register')">Create Account</div>
+      </div>
+
+      <div id="loginForm" class="auth-form">
+        <label>Email</label>
+        <input class="input-field" type="email" id="loginEmail" placeholder="you@example.com">
+        <label>Password</label>
+        <input class="input-field" type="password" id="loginPassword" placeholder="••••••••">
+        <button class="btn btn-primary" style="width:100%;margin-top:var(--space-sm)" onclick="handleLogin()">Sign In</button>
+
+      </div>
+
+      <div id="registerForm" class="auth-form" style="display:none">
+        <label>Full Name</label>
+        <input class="input-field" type="text" id="regName" placeholder="Alex Kumar">
+        <label>Email</label>
+        <input class="input-field" type="email" id="regEmail" placeholder="you@example.com">
+        <label>Password</label>
+        <input class="input-field" type="password" id="regPassword" placeholder="••••••••">
+        <button class="btn btn-primary" style="width:100%;margin-top:var(--space-sm)" onclick="handleRegister()">Create Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== SCHEDULE SESSION MODAL ======== -->
+  <div class="modal-overlay schedule-modal" id="scheduleModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">📅 Request Swap</h3>
+        <button class="modal-close" onclick="closeScheduleModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin-bottom:var(--space-sm)">Select Partner</label>
+        <select id="schedulePartner">
+          <option>Sarah Johnson — UX Design</option>
+          <option>Marcus Chen — Piano</option>
+          <option>Priya Patel — Data Science</option>
+          <option>James Wilson — Photography</option>
+        </select>
+
+        <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin:var(--space-lg) 0 var(--space-sm)">Select Date</label>
+        <input class="input-field" type="date" id="scheduleDate" style="padding-left:1rem">
+
+        <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin:var(--space-lg) 0 var(--space-sm)">Select Time Slot</label>
+        <div class="time-slots" id="scheduleTimeSlots">
+          <div class="time-slot" onclick="selectTimeSlot(this)">9:00 AM</div>
+          <div class="time-slot" onclick="selectTimeSlot(this)">10:00 AM</div>
+          <div class="time-slot" onclick="selectTimeSlot(this)">11:00 AM</div>
+          <div class="time-slot booked">2:00 PM</div>
+          <div class="time-slot" onclick="selectTimeSlot(this)">3:00 PM</div>
+          <div class="time-slot" onclick="selectTimeSlot(this)">4:00 PM</div>
+          <div class="time-slot" onclick="selectTimeSlot(this)">5:00 PM</div>
+          <div class="time-slot booked">6:00 PM</div>
+          <div class="time-slot" onclick="selectTimeSlot(this)">7:00 PM</div>
+        </div>
+
+        <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin:var(--space-lg) 0 var(--space-sm)">Skill to Exchange</label>
+        <select id="scheduleSkill">
+          <option>JavaScript → UX Design</option>
+          <option>React → Piano</option>
+          <option>Web Dev → Data Science</option>
+          <option>Node.js → Photography</option>
+        </select>
+
+        <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin:var(--space-lg) 0 var(--space-sm)">Notes (optional)</label>
+        <textarea placeholder="Any topics you'd like to cover..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeScheduleModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmSchedule()">Send Request ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== REPORT / SAFETY MODAL ======== -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">⚠️ Report User</h3>
+        <button class="modal-close" onclick="closeReportModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin-bottom:var(--space-sm)">Reason for Report</label>
+        <select>
+          <option>Inappropriate behavior</option>
+          <option>Spam or fake profile</option>
+          <option>No-show for session</option>
+          <option>Harassment</option>
+          <option>Other</option>
+        </select>
+
+        <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin:var(--space-lg) 0 var(--space-sm)">Additional Details</label>
+        <textarea placeholder="Please describe the issue in detail..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeReportModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitReport()" style="background:var(--red)">Submit Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== PERSONALIZE PROFILE MODAL ======== -->
+  <div class="modal-overlay" id="personalizeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title gradient-text">Personalize Profile</h3>
+        <button class="modal-close" onclick="closePersonalizeModal()">✕</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <label>Display Name</label>
+        <input class="input-field" type="text" id="persName" placeholder="Alex Kumar">
+        
+        <label>Email (Read-only)</label>
+        <input class="input-field" type="email" id="persEmail" readonly style="background: rgba(255,255,255,0.05); color: var(--text-muted)">
+        
+        <div style="display: flex; gap: var(--space-md);">
+            <div style="flex: 1;">
+                <label>Age</label>
+                <input class="input-field" type="number" id="persAge" placeholder="25">
+            </div>
+            <div style="flex: 1;">
+                <label>Phone Number</label>
+                <input class="input-field" type="tel" id="persPhone" placeholder="+1 (555) 000-0000">
+            </div>
+        </div>
+
+        <label>What skills can you teach? (comma separated)</label>
+        <input class="input-field" type="text" id="persTeach" placeholder="e.g. JavaScript, Guitar, Spanish">
+        
+        <label>What do you want to learn? (comma separated)</label>
+        <input class="input-field" type="text" id="persLearn" placeholder="e.g. Python, Photography, Cooking">
+        
+        <label>Availability Calendar (Select Days)</label>
+        <div id="persAvailabilityDays" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: var(--space-md);">
+          <label><input type="checkbox" value="0"> Sun</label>
+          <label><input type="checkbox" value="1"> Mon</label>
+          <label><input type="checkbox" value="2"> Tue</label>
+          <label><input type="checkbox" value="3"> Wed</label>
+          <label><input type="checkbox" value="4"> Thu</label>
+          <label><input type="checkbox" value="5"> Fri</label>
+          <label><input type="checkbox" value="6"> Sat</label>
+        </div>
+
+        <label>Interesting Details (Bio)</label>
+        <textarea id="persBio" placeholder="Tell us a little bit about yourself, your goals, and interests..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePersonalizeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitPersonalizeProfile()">Save Profile ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== TOAST CONTAINER ======== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ======== FOOTER ======== -->
+  <footer class="footer" id="mainFooter">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="nav-logo" style="margin-bottom:var(--space-md)">
+            <img src="assets/logo.png" alt="Logo" class="logo-img">
+            <span>skillswap</span>
+          </div>
+          <p>Exchange skills, grow together. The world's first AI-powered peer-to-peer skill exchange platform.</p>
+          <div class="footer-social">
+            <a class="social-icon" href="#" title="Twitter">𝕏</a>
+            <a class="social-icon" href="#" title="GitHub">⌨</a>
+            <a class="social-icon" href="#" title="LinkedIn">in</a>
+            <a class="social-icon" href="#" title="Discord">🎮</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Platform</h4>
+          <div class="footer-links">
+            <a class="footer-link" href="#" onclick="navigateTo('explore')">Explore Skills</a>
+            <a class="footer-link" href="#" onclick="navigateTo('dashboard')">Dashboard</a>
+            <a class="footer-link" href="#" onclick="navigateTo('progress')">Progress</a>
+            <a class="footer-link" href="#">Pricing</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <div class="footer-links">
+            <a class="footer-link" href="#">Help Center</a>
+            <a class="footer-link" href="#">Community</a>
+            <a class="footer-link" href="#">Blog</a>
+            <a class="footer-link" href="#">API Docs</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <div class="footer-links">
+            <a class="footer-link" href="#">Privacy Policy</a>
+            <a class="footer-link" href="#">Terms of Service</a>
+            <a class="footer-link" href="#">Safety</a>
+            <a class="footer-link" href="#">Cookies</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2026 SkillSwap AI. All rights reserved.</span>
+        <span>Made with 💜 for learners everywhere</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======== AI CHAT WIDGET ======== -->
+  <button class="floating-ai-btn" onclick="toggleAIChat()">
+    <i data-lucide="bot"></i>
+  </button>
+
+  <div class="ai-chat-panel" id="aiChatPanel">
+    <div class="ai-chat-header">
+      <h3 class="gradient-text">SkillSwap AI</h3>
+      <button class="ai-chat-close" onclick="toggleAIChat()">✕</button>
+    </div>
+    <div class="ai-chat-messages" id="aiChatMessages">
+      <div class="ai-msg bot">Hi there! 👋 I'm your AI assistant. Tell me what skill you want to learn, and I'll find the best partners and study groups for you!</div>
+    </div>
+    <div class="ai-chat-input-area">
+      <input type="text" id="aiChatInput" placeholder="E.g. I want to learn Python..." onkeypress="handleAIPress(event)">
+      <button onclick="sendAIMessage()">Send</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

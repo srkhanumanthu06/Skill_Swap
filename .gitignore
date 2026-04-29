@@ -1,0 +1,8 @@
+node_modules/
+.gemini/
+*.sqlite
+__pycache__/
+*.pyc
+.env
+package-lock.json
+C:/Users/srkha/.gemini/antigravity/brain/b1600d25-d006-449f-af30-08bdde2d6d04/
