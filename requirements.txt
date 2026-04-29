@@ -5,6 +5,7 @@ PyJWT
 bcrypt
 Flask-SocketIO
 python-dotenv
+requests
 gunicorn
 gevent
 gevent-websocket
