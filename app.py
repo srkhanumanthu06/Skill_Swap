@@ -335,65 +335,51 @@ def ai_chat():
     # Try OLLAMA first if key is present
     if OLLAMA_KEY:
         try:
-            # Assuming an OpenAI-compatible endpoint for hosted Ollama services
-            OLLAMA_URL = "https://api.novita.ai/v3/openai/chat/completions" # Common provider for this key format
+            # Common OpenAI-compatible endpoint for this key format (Novita / DeepInfra)
+            OLLAMA_URL = "https://api.novita.ai/v3/openai/chat/completions"
             ollama_headers = {
                 "Authorization": f"Bearer {OLLAMA_KEY}",
                 "Content-Type": "application/json"
             }
             ollama_payload = {
-                "model": "meta-llama/llama-3-8b-instruct",
+                "model": "meta-llama/llama-3-8b-instruct", # Try standard Llama 3
                 "messages": [
-                    {"role": "system", "content": "You are the SkillSwap AI Assistant. Match users with skill partners friendly and briefly."},
+                    {"role": "system", "content": "You are the SkillSwap AI Assistant. Help match users with skill partners. Be brief, friendly, and use <br> for line breaks."},
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.7,
-                "max_tokens": 300
+                "max_tokens": 250
             }
             
-            res = requests.post(OLLAMA_URL, headers=ollama_headers, json=ollama_payload, timeout=15)
+            res = requests.post(OLLAMA_URL, headers=ollama_headers, json=ollama_payload, timeout=10)
             if res.status_code == 200:
                 bot_reply = res.json()['choices'][0]['message']['content'].strip()
                 bot_reply = bot_reply.replace('\n', '<br>')
                 return jsonify({'response': bot_reply})
+            else:
+                print(f"Ollama API Error: {res.status_code} - {res.text}")
         except Exception as e:
-            print(f"Ollama Error: {e}")
+            print(f"Ollama Exception: {e}")
 
-    # Fallback to Hugging Face
-    HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+    # Fallback to Hugging Face (Using a faster, more reliable model)
+    HF_API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
     payload = {
         "inputs": prompt,
-        "parameters": {"max_new_tokens": 250, "temperature": 0.7, "return_full_text": False}
+        "parameters": {"max_new_tokens": 200, "temperature": 0.7, "return_full_text": False}
     }
     
     try:
-        response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=30)
+        response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=15)
         
         if response.status_code == 200:
             result = response.json()
-            if isinstance(result, list) and len(result) > 0 and 'generated_text' in result[0]:
-                bot_reply = result[0]['generated_text'].strip()
-                bot_reply = bot_reply.replace('\n', '<br>')
+            if isinstance(result, list) and len(result) > 0:
+                # Handle different HF response formats
+                text = result[0].get('generated_text', '') if isinstance(result[0], dict) else str(result[0])
+                bot_reply = text.strip().replace('\n', '<br>')
                 return jsonify({'response': bot_reply})
-            else:
-                return jsonify({'response': "Unexpected response from AI service. Please try again."})
         elif response.status_code == 503:
-            return jsonify({'response': "AI Model is currently loading. Please wait 30 seconds and try again."})
-        else:
-            # Dynamic Offline Fallback
-            msg_lower = message.lower()
-            if 'python' in msg_lower or 'code' in msg_lower or 'web' in msg_lower or 'tech' in msg_lower:
-                simulated_reply = "Hi! <i>(Offline Mode)</i> I see you're interested in tech! <b>Alex Kumar</b> is a great match for coding and web development. He's available for a swap this Thursday.<br><br>I also recommend joining the 'Beginner Tech' study group!"
-            elif 'design' in msg_lower or 'ui' in msg_lower or 'ux' in msg_lower or 'figma' in msg_lower:
-                simulated_reply = "Hi! <i>(Offline Mode)</i> Looking to learn design? <b>Sarah Johnson</b> is an expert in UI/UX and Figma. She has fantastic reviews from other learners.<br><br>Check out her profile on the Explore page!"
-            elif 'music' in msg_lower or 'guitar' in msg_lower or 'piano' in msg_lower:
-                simulated_reply = "Hi! <i>(Offline Mode)</i> That's awesome! <b>Marcus Chen</b> is currently offering guitar lessons and is looking to learn web design in return.<br><br>Want me to help you set up a session with him?"
-            elif 'language' in msg_lower or 'spanish' in msg_lower or 'speak' in msg_lower:
-                simulated_reply = "Hi! <i>(Offline Mode)</i> <b>Elena Rodriguez</b> is fluent in Spanish and loves helping beginners. She's looking to improve her English conversational skills in a swap.<br><br>Sound like a good match?"
-            elif 'hi' in msg_lower or 'hello' in msg_lower or 'hey' in msg_lower:
-                simulated_reply = "Hello there! <i>(Offline Mode)</i> What are you looking to learn today? I can help you find tutors for coding, design, music, languages, and more!"
-            else:
                 simulated_reply = f"Hi! <i>(Offline Mode)</i> You mentioned '{message}'. While I can't do a live deep search right now, I highly recommend checking out the 'Explore' page where you can find tutors for exactly that skill!"
                 
             return jsonify({'response': simulated_reply})
