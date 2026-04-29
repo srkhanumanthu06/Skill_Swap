@@ -1408,6 +1408,9 @@ function updateUIWithUser(user) {
   const dashName = document.getElementById('dashboardName');
   if (dashName) dashName.textContent = user.name.split(' ')[0];
 
+  // Specific stats for 'siva' account
+  const isSiva = user.name.toLowerCase().includes('siva');
+
   // Update Profile
   const profileName = document.getElementById('profileName');
   if (profileName) profileName.textContent = user.name;
@@ -1491,6 +1494,18 @@ function updateUIWithUser(user) {
     if (sessionsContainer) {
       sessionsContainer.innerHTML = '<div style="text-align:center; padding:var(--space-xl); color:var(--text-muted)">No upcoming sessions. Schedule one to get started!</div>';
     }
+  } else if (isSiva) {
+    if (document.getElementById('dashSessionsCount')) {
+      document.getElementById('dashSessionsCount').textContent = '12'; // Default for Siva
+      document.getElementById('dashSessionsChange').style.display = 'inline-flex';
+      document.getElementById('dashRatingValue').textContent = '4.5';
+      document.getElementById('dashRatingChange').style.display = 'inline-flex';
+      document.getElementById('dashStreakValue').textContent = '6';
+      document.getElementById('dashStreakChange').style.display = 'inline-flex';
+      document.getElementById('dashConnectionsCount').textContent = '4';
+      document.getElementById('dashConnectionsChange').style.display = 'inline-flex';
+    }
+    renderSessions();
   } else {
     if (document.getElementById('dashSessionsCount')) {
       document.getElementById('dashSessionsCount').textContent = '24';
@@ -1506,7 +1521,16 @@ function updateUIWithUser(user) {
     renderSessions();
   }
 
-  // Render Calendars with user availability
+  function editSessionsCount() {
+  const current = document.getElementById('dashSessionsCount').textContent;
+  const newValue = prompt("Enter new sessions completed count:", current);
+  if (newValue !== null && !isNaN(newValue)) {
+    document.getElementById('dashSessionsCount').textContent = newValue;
+    showToast(`✅ Sessions count updated to ${newValue}`);
+  }
+}
+
+// Render Calendars with user availability
   let availIndices = [];
   try {
     if (user.availability) availIndices = JSON.parse(user.availability);

@@ -62,6 +62,18 @@ def init_db():
         except sqlite3.OperationalError:
             pass  # Column already exists
             
+    # Seed main Siva account if it doesn't exist
+    password = "srk007"
+    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    try:
+        conn.execute('''
+            INSERT INTO users (name, email, password, teach_skills, learn_skills, avatar_initials)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', ('Siva', 'srkhanumanthu06@gmail.com', hashed, '["Python", "Web Dev"]', '["AI", "Machine Learning"]', 'S'))
+        print("Main account (Siva) seeded successfully.")
+    except sqlite3.IntegrityError:
+        pass
+
     conn.commit()
     conn.close()
     print("Connected to SQLite database.")

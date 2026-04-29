@@ -418,8 +418,13 @@
               <div class="stat-card-icon">📚</div>
               <span class="stat-card-change up" id="dashSessionsChange">+12%</span>
             </div>
-            <div class="stat-card-value" id="dashSessionsCount">24</div>
-            <div class="stat-card-label">Sessions Completed</div>
+            <div class="stat-card-value" id="dashSessionsCount">0</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div class="stat-card-label">Sessions Completed</div>
+              <button class="btn btn-secondary btn-sm" onclick="editSessionsCount()" style="padding:4px;background:transparent;border:none;color:var(--text-muted);cursor:pointer">
+                <i data-lucide="edit-2" style="width:14px;height:14px"></i>
+              </button>
+            </div>
           </div>
           <div class="stat-card glass-card fade-in">
             <div class="stat-card-header">
@@ -738,10 +743,10 @@
       <div class="modal-body">
         <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin-bottom:var(--space-sm)">Select Partner</label>
         <select id="schedulePartner">
-          <option>Sarah Johnson — UX Design</option>
-          <option>Marcus Chen — Piano</option>
-          <option>Priya Patel — Data Science</option>
-          <option>James Wilson — Photography</option>
+          <option>Harsha — Machine Learning</option>
+          <option>Hariharan — Web Development</option>
+          <option>Satish — Java</option>
+          <option>Sri Ram — Java</option>
         </select>
 
         <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin:var(--space-lg) 0 var(--space-sm)">Select Date</label>
