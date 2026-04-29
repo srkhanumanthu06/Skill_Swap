@@ -3,10 +3,10 @@
    ============================================ */
 
 // API Configuration for Backend Integration
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${window.location.origin}/api`;
 let socket = null;
 if (typeof io !== 'undefined') {
-  socket = io('http://localhost:5000');
+  socket = io(window.location.origin);
   
   socket.on('receive_message', (data) => {
     if (!MOCK_MESSAGES[data.from]) MOCK_MESSAGES[data.from] = [];
