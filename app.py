@@ -329,9 +329,38 @@ def ai_chat():
 
     prompt = f"<s>[INST] You are the SkillSwap AI Assistant. Your job is to match the user with skill partners. Here are the available users:\n{users_info}\nThe user says: '{message}'. Respond directly with 1-3 matching users who can teach them what they want to learn, and suggest a relevant study group. Format with line breaks using <br> tags. Keep your response brief and friendly. Do not output the user list. [/INST]"
     
+    OLLAMA_KEY = os.getenv('OLLAMA_API_KEY')
     HF_API_KEY = os.getenv('HF_API_KEY', 'your_huggingface_token_here')
+
+    # Try OLLAMA first if key is present
+    if OLLAMA_KEY:
+        try:
+            # Assuming an OpenAI-compatible endpoint for hosted Ollama services
+            OLLAMA_URL = "https://api.novita.ai/v3/openai/chat/completions" # Common provider for this key format
+            ollama_headers = {
+                "Authorization": f"Bearer {OLLAMA_KEY}",
+                "Content-Type": "application/json"
+            }
+            ollama_payload = {
+                "model": "meta-llama/llama-3-8b-instruct",
+                "messages": [
+                    {"role": "system", "content": "You are the SkillSwap AI Assistant. Match users with skill partners friendly and briefly."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 300
+            }
+            
+            res = requests.post(OLLAMA_URL, headers=ollama_headers, json=ollama_payload, timeout=15)
+            if res.status_code == 200:
+                bot_reply = res.json()['choices'][0]['message']['content'].strip()
+                bot_reply = bot_reply.replace('\n', '<br>')
+                return jsonify({'response': bot_reply})
+        except Exception as e:
+            print(f"Ollama Error: {e}")
+
+    # Fallback to Hugging Face
     HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
-    
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
     payload = {
         "inputs": prompt,
