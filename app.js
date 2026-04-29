@@ -160,6 +160,260 @@ const TESTIMONIALS = [
   { name: 'Rachel Green', initials: 'RG', role: 'Marketing Lead', text: '"I love the trust system. Knowing my partners are verified and reviewed gives me full confidence in every session."', rating: 5 },
 ];
 
+// ==========================================
+// PER-USER PROGRESS (localStorage)
+// ==========================================
+
+const USER_PROGRESS_STORAGE_KEY = 'skillswap.userProgress.v1';
+
+function getUserProgressKey(user) {
+  if (!user) return null;
+  return String(user.id || user.email || user.name || 'anonymous').toLowerCase().trim();
+}
+
+function loadUserProgressStore() {
+  try {
+    const raw = localStorage.getItem(USER_PROGRESS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveUserProgressStore(store) {
+  try {
+    localStorage.setItem(USER_PROGRESS_STORAGE_KEY, JSON.stringify(store || {}));
+  } catch (e) {
+    // ignore storage failures (private mode / quota)
+  }
+}
+
+function getUserProgress(user = currentUser) {
+  const key = getUserProgressKey(user);
+  if (!key) return null;
+  const store = loadUserProgressStore();
+  return store[key] || null;
+}
+
+function setUserProgress(progress, user = currentUser) {
+  const key = getUserProgressKey(user);
+  if (!key) return;
+  const store = loadUserProgressStore();
+  store[key] = progress;
+  saveUserProgressStore(store);
+}
+
+function getTodayISODate() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getYesterdayISODate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function percentToLabel(percent) {
+  if (percent >= 86) return 'Expert';
+  if (percent >= 66) return 'Advanced';
+  if (percent >= 36) return 'Intermediate';
+  return 'Beginner';
+}
+
+function calcLevelFromXp(totalXp) {
+  // Simple leveling: 500 XP per level
+  const xp = Math.max(0, Number(totalXp) || 0);
+  return Math.floor(xp / 500) + 1;
+}
+
+function calcNextLevelXp(level) {
+  const lvl = Math.max(1, Number(level) || 1);
+  return lvl * 500;
+}
+
+function buildInitialProgressFromProfile(user) {
+  const teachSkills = user?.teach_skills || [];
+  const learnSkills = user?.learn_skills || [];
+  const allSkills = [];
+
+  teachSkills.forEach(s => allSkills.push({ name: s, isLearning: false }));
+  learnSkills.forEach(s => allSkills.push({ name: s, isLearning: true }));
+
+  const progressBySkill = {};
+  const userIdentifier = (user?.email || user?.name || 'default').toLowerCase();
+
+  allSkills.forEach(item => {
+    const skill = String(item.name || '').trim();
+    if (!skill) return;
+
+    // Deterministic seed so each account starts differently,
+    // but afterwards progress is saved and evolves per account.
+    const hashStr = userIdentifier + '|' + skill;
+    const hash = hashStr.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
+
+    let percent = 0;
+    if (item.isLearning) percent = 5 + (Math.abs(hash) % 25);      // 5%..29%
+    else percent = 40 + (Math.abs(hash) % 45);                     // 40%..84%
+
+    const xp = Math.floor(percent * 8.5);
+    progressBySkill[skill] = { percent, xp, level: percentToLabel(percent) };
+  });
+
+  const totalXp = Object.values(progressBySkill).reduce((sum, s) => sum + (Number(s.xp) || 0), 0);
+  const level = calcLevelFromXp(totalXp);
+  const nextLevelXp = calcNextLevelXp(level);
+  const progressToNext = nextLevelXp > 0 ? Math.min(100, Math.round((totalXp / nextLevelXp) * 100)) : 0;
+
+  return {
+    version: 1,
+    updated_at: Date.now(),
+    streak: 0,
+    last_activity_date: null,
+    total_xp: totalXp,
+    level,
+    next_level_xp: nextLevelXp,
+    progress_to_next_percent: progressToNext,
+    progress_by_skill: progressBySkill,
+    history: []
+  };
+}
+
+function ensureUserProgressInitialized(user = currentUser) {
+  if (!user) return null;
+  const existing = getUserProgress(user);
+  if (existing) return existing;
+
+  const teachSkills = user?.teach_skills || [];
+  const learnSkills = user?.learn_skills || [];
+  const hasSkills = teachSkills.length + learnSkills.length > 0;
+  if (!hasSkills) return null;
+
+  const created = buildInitialProgressFromProfile(user);
+  setUserProgress(created, user);
+  return created;
+}
+
+function updateProgressStreak(progress) {
+  const today = getTodayISODate();
+  const yesterday = getYesterdayISODate();
+  const last = progress.last_activity_date;
+
+  if (last === today) {
+    // no change
+  } else if (last === yesterday) {
+    progress.streak = Math.max(0, Number(progress.streak) || 0) + 1;
+    progress.last_activity_date = today;
+  } else {
+    progress.streak = 1;
+    progress.last_activity_date = today;
+  }
+}
+
+function recalcOverallProgress(progress) {
+  const totalXp = Object.values(progress.progress_by_skill || {}).reduce((sum, s) => sum + (Number(s.xp) || 0), 0);
+  const level = calcLevelFromXp(totalXp);
+  const nextLevelXp = calcNextLevelXp(level);
+  const fill = nextLevelXp > 0 ? Math.min(100, Math.round((totalXp / nextLevelXp) * 100)) : 0;
+
+  progress.total_xp = totalXp;
+  progress.level = level;
+  progress.next_level_xp = nextLevelXp;
+  progress.progress_to_next_percent = fill;
+  progress.updated_at = Date.now();
+}
+
+function renderProgressSummary(progress) {
+  const levelEl = document.getElementById('progressLevelLabel');
+  const xpTotalEl = document.getElementById('progressXpTotal');
+  const streakEl = document.getElementById('progressStreakLabel');
+  const fillEl = document.getElementById('progressXpFill');
+  const xpCurrentEl = document.getElementById('progressXpCurrent');
+  const xpToNextEl = document.getElementById('progressXpToNext');
+  const nextLevelEl = document.getElementById('progressNextLevelLabel');
+
+  if (!levelEl || !xpTotalEl || !streakEl || !fillEl || !xpCurrentEl || !xpToNextEl || !nextLevelEl) return;
+
+  const level = Number(progress?.level) || 1;
+  const totalXp = Number(progress?.total_xp) || 0;
+  const nextLevelXp = Number(progress?.next_level_xp) || calcNextLevelXp(level);
+  const toNext = Math.max(0, nextLevelXp - totalXp);
+  const fill = Number(progress?.progress_to_next_percent) || 0;
+  const streak = Math.max(0, Number(progress?.streak) || 0);
+
+  levelEl.textContent = `Level ${level}`;
+  xpTotalEl.textContent = totalXp.toLocaleString();
+  streakEl.textContent = `🔥 ${streak}-day streak`;
+  fillEl.style.width = `${Math.max(0, Math.min(100, fill))}%`;
+  xpCurrentEl.textContent = totalXp.toLocaleString();
+  xpToNextEl.textContent = toNext.toLocaleString();
+  nextLevelEl.textContent = `Level ${level + 1}`;
+}
+
+function addLearningHistoryEntry(progress, entry) {
+  if (!progress.history) progress.history = [];
+  progress.history.unshift(entry);
+  progress.history = progress.history.slice(0, 30);
+}
+
+function bumpSkillProgress(progress, skillName, xpGain = 0, percentGain = 0) {
+  const skill = String(skillName || '').trim();
+  if (!skill) return;
+  if (!progress.progress_by_skill) progress.progress_by_skill = {};
+
+  const current = progress.progress_by_skill[skill] || { percent: 0, xp: 0, level: 'Beginner' };
+  const nextPercent = Math.max(0, Math.min(100, (Number(current.percent) || 0) + (Number(percentGain) || 0)));
+  const nextXp = Math.max(0, (Number(current.xp) || 0) + (Number(xpGain) || 0));
+
+  progress.progress_by_skill[skill] = {
+    percent: nextPercent,
+    xp: nextXp,
+    level: percentToLabel(nextPercent)
+  };
+}
+
+function recordScheduledSwapProgress({ partnerName, skillExchangeLabel }) {
+  if (!currentUser) return;
+
+  const progress = ensureUserProgressInitialized(currentUser) || getUserProgress(currentUser);
+  if (!progress) return;
+
+  const parts = String(skillExchangeLabel || '').split(/↔|<->|->|→/).map(s => s.trim()).filter(Boolean);
+  const skillA = parts[0];
+  const skillB = parts[1] || null;
+
+  // Treat scheduling as an activity log + small progress bump.
+  const xpGain = 120;
+  const percentGain = 4;
+
+  if (skillA) bumpSkillProgress(progress, skillA, Math.floor(xpGain * 0.6), percentGain);
+  if (skillB) bumpSkillProgress(progress, skillB, Math.floor(xpGain * 0.4), percentGain);
+
+  updateProgressStreak(progress);
+  recalcOverallProgress(progress);
+
+  addLearningHistoryEntry(progress, {
+    date: 'Today',
+    skill: skillB || skillA || 'Skill Swap',
+    partner: partnerName || 'Partner',
+    duration: '—',
+    xp: `+${xpGain} XP`
+  });
+
+  setUserProgress(progress, currentUser);
+  renderProgressSummary(progress);
+  renderProgress();
+  renderLearningHistory();
+}
+
 
 // ==========================================
 // NAVIGATION (SPA Router)
@@ -626,43 +880,20 @@ function renderProgress() {
   const circumference = 2 * Math.PI * 50; // radius 50
 
   let dataToRender = PROGRESS_DATA;
+
   if (typeof currentUser !== 'undefined' && currentUser) {
-    const userIdentifier = currentUser.email || currentUser.name || 'default';
-    const teachSkills = currentUser.teach_skills || [];
-    const learnSkills = currentUser.learn_skills || [];
-    const allSkills = [];
+    const userProgress = ensureUserProgressInitialized(currentUser) || getUserProgress(currentUser);
+    const bySkill = userProgress?.progress_by_skill || {};
+    const entries = Object.entries(bySkill).map(([name, v]) => ({
+      name,
+      percent: Number(v.percent) || 0,
+      level: v.level || percentToLabel(Number(v.percent) || 0),
+      xp: Number(v.xp) || 0
+    }));
 
-    teachSkills.forEach(skill => allSkills.push({ name: skill, isLearning: false }));
-    learnSkills.forEach(skill => allSkills.push({ name: skill, isLearning: true }));
+    dataToRender = entries;
 
-    if (allSkills.length > 0) {
-      dataToRender = allSkills.map(item => {
-        const skill = item.name;
-        // Generate deterministic progress based on both user and skill name
-        const hashStr = userIdentifier + skill;
-        const hash = hashStr.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
-        
-        let percent;
-        if (item.isLearning) {
-          // Skills they want to learn start much lower (5% to 35%)
-          percent = 5 + (Math.abs(hash) % 30);
-        } else {
-          // Skills they teach are much higher (60% to 95%)
-          percent = 60 + (Math.abs(hash) % 35);
-        }
-
-        let level = 'Beginner';
-        if (percent > 85) level = 'Expert';
-        else if (percent > 65) level = 'Advanced';
-        else if (percent > 35) level = 'Intermediate';
-        
-        const xp = Math.floor(percent * 8.5);
-
-        return { name: skill, percent, level, xp };
-      });
-    } else {
-      dataToRender = []; // Empty state is handled by the wrapper visibility
-    }
+    if (userProgress) renderProgressSummary(userProgress);
   }
 
   container.innerHTML = dataToRender.map(p => {
@@ -692,7 +923,23 @@ function renderLearningHistory() {
   const container = document.getElementById('learningHistory');
   if (!container) return;
 
-  container.innerHTML = LEARNING_HISTORY.map(h => `
+  let historyToRender = LEARNING_HISTORY;
+
+  if (typeof currentUser !== 'undefined' && currentUser) {
+    const userProgress = ensureUserProgressInitialized(currentUser) || getUserProgress(currentUser);
+    historyToRender = (userProgress && Array.isArray(userProgress.history)) ? userProgress.history : [];
+  }
+
+  if (!historyToRender || historyToRender.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:var(--space-xl); color:var(--text-muted)">
+        No learning history yet. Schedule a swap to start tracking your progress.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = historyToRender.map(h => `
     <div class="session-item">
       <div style="min-width:70px;font-size:0.8rem;color:var(--text-muted)">${h.date}</div>
       <div class="session-info">
@@ -1144,6 +1391,10 @@ function updateUIWithUser(user) {
   if (socket) {
     socket.emit('register', { username: user.name });
   }
+
+  // Ensure per-user progress exists (if they have skills)
+  const userProgress = ensureUserProgressInitialized(user) || getUserProgress(user);
+  if (userProgress) renderProgressSummary(userProgress);
   
   // Update Navbar
   const authBtn = document.getElementById('authBtn');
@@ -1270,6 +1521,7 @@ function updateUIWithUser(user) {
 
   renderProfileGroups();
   renderProgress(); // Re-render progress with new user data
+  renderLearningHistory();
   renderNotifications();
   renderNetwork();
 }
@@ -1374,16 +1626,23 @@ function confirmSchedule() {
   // Add to sessions
   const partner = document.getElementById('schedulePartner').value.split(' — ')[0];
   const initials = partner.split(' ').map(n => n[0]).join('');
+  const skillExchange = document.getElementById('scheduleSkill').value;
   MOCK_SESSIONS.unshift({
     partner,
     initials,
-    skill: document.getElementById('scheduleSkill').value,
+    skill: skillExchange,
     date: 'Upcoming',
     time: selectedTime.textContent,
     status: 'confirmed'
   });
 
   renderSessions();
+
+  // Track progress per account
+  recordScheduledSwapProgress({
+    partnerName: partner,
+    skillExchangeLabel: skillExchange
+  });
 }
 
 

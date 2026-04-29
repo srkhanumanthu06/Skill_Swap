@@ -578,21 +578,25 @@
         </div>
 
         <div id="progressDataContainer">
-          <!-- XP Overall -->
-          <div class="glass-card fade-in" style="margin-bottom:var(--space-2xl);padding:var(--space-2xl)">
+        <!-- XP Overall (filled by JS per user) -->
+        <div class="glass-card fade-in" style="margin-bottom:var(--space-2xl);padding:var(--space-2xl)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
             <div>
               <div style="font-size:0.85rem;color:var(--text-muted)">Total Experience</div>
-              <div style="font-size:2rem;font-weight:800"><span class="gradient-text">Level 4</span> — 1,250 XP</div>
+              <div style="font-size:2rem;font-weight:800">
+                <span class="gradient-text" id="progressLevelLabel">Level 1</span>
+                <span> — </span>
+                <span id="progressXpTotal">0</span><span> XP</span>
+              </div>
             </div>
-            <div class="badge badge-pink">🔥 2-day streak</div>
+            <div class="badge badge-pink" id="progressStreakLabel">🔥 0-day streak</div>
           </div>
           <div class="progress-xp-bar">
-            <div class="progress-xp-fill" style="width:62%"></div>
+            <div class="progress-xp-fill" id="progressXpFill" style="width:0%"></div>
           </div>
           <div style="display:flex;justify-content:space-between;margin-top:var(--space-xs);font-size:0.8rem;color:var(--text-muted)">
-            <span>1,250 XP</span>
-            <span>2,000 XP to Level 5</span>
+            <span><span id="progressXpCurrent">0</span> XP</span>
+            <span><span id="progressXpToNext">500</span> XP to <span id="progressNextLevelLabel">Level 2</span></span>
           </div>
         </div>
 
