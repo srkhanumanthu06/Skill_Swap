@@ -17,6 +17,9 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Initialize database on startup
+init_db()
+
 PORT = int(os.getenv('PORT', 5000))
 JWT_SECRET = 'super-secure-secret-skillswap-ai-2026'
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database.sqlite')
@@ -436,5 +439,4 @@ def handle_disconnect():
         print(f"User {disconnected_user} disconnected.")
 
 if __name__ == '__main__':
-    init_db()
     socketio.run(app, port=PORT, debug=True, allow_unsafe_werkzeug=True)
