@@ -2143,16 +2143,35 @@ input, textarea, select {
 }
 
 @media (max-width: 768px) {
+  .navbar .container {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
   .nav-logo {
-    font-size: 1rem;
+    font-size: 0.65rem !important; /* Half size of previous 1.35rem roughly */
+    flex: 1 1 auto;
+  }
+  
+  .nav-logo .logo-img {
+    width: 24px;
   }
   
   .nav-actions {
-    gap: 0.5rem !important;
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    gap: 0.25rem !important;
+  }
+
+  .nav-actions .btn {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.7rem !important;
   }
   
   .hero-title {
-    font-size: 2.2rem;
+    font-size: 2rem;
   }
 
   .steps-grid {
