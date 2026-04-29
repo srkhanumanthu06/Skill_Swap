@@ -2138,8 +2138,23 @@ input, textarea, select {
   }
 
   .hero-title {
-    font-size: 3rem;
+    font-size: 2.8rem;
   }
+}
+
+@media (max-width: 768px) {
+  .nav-logo {
+    font-size: 1.2rem;
+  }
+  
+  .nav-actions {
+    gap: 0.75rem !important;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+  }
+}
 
   .hero-buttons {
     justify-content: center;
@@ -2276,8 +2291,30 @@ input, textarea, select {
 }
 
 @media (max-width: 480px) {
+  .nav-logo {
+    font-size: 1.1rem;
+  }
+  
+  .nav-logo .logo-img {
+    width: 32px;
+  }
+
+  .nav-actions {
+    gap: 0.5rem !important;
+  }
+
+  .nav-actions .btn {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.75rem !important;
+  }
+
   .hero-title {
-    font-size: 1.85rem;
+    font-size: 2.2rem !important; /* Slightly smaller than before for very small screens */
+    line-height: 1.1;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem !important;
   }
 
   .categories-grid {
